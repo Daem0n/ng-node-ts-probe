@@ -1,15 +1,15 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 
-import {Router} from './router';
-import {WelcomeController} from './controllers';
+import {Router} from './lib/framework/router';
 import {ApplicationConfiguration} from "./lib/application-configuration";
 
 export class Application {
     static Current: Application;
 
-    express: express.Application;
+    express: express.Express;
     configuration: ApplicationConfiguration;
     router: Router;
+    count: number = 0;
 
     constructor() {
         // Create a new express application instance
@@ -17,13 +17,15 @@ export class Application {
         this.configuration = ApplicationConfiguration.Default();
         // The port the express app will listen on
 
-        this.router = new Router();
-        this.express.use(this.router.handler);
-
-        // Mount the WelcomeController at the /welcome route
-        this.express.use('/welcome', WelcomeController);
-
-        // Serve the application at the given port
+        this.router = new Router(express.Router());
+        this.express.use((req: Request, res: Response, next: NextFunction) => {
+            const label = (++this.count).toString();
+            console.log(label, req.url);
+            console.time(label);
+            next();
+            console.timeEnd(label);
+        });
+        this.express.use('/api', this.router.getRouter());
     }
 
     start() {
